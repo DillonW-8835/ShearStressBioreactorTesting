@@ -1,0 +1,56 @@
+
+.center {
+	margin: auto;
+	width: 96%;
+	padding: 10px;
+	text-align: center;
+}
+
+.mainButton {
+	width: 60%;
+	font-size: 22px;
+}
+
+ul.no-bullets {
+	list-style-type: none; /* Remove bullets */
+	padding: 0; /* Remove padding */
+	margin: 0; /* Remove margins */
+}
+
+.routineManagerInput {
+	width: 17%;
+	font-size: 20px;
+}
+.routineManagerInputSmaller {
+	width: 10%;
+	font-size: 20px;
+}
+
+.routineManagerEntry {
+	width: 98%;
+	margin: auto;
+	border: 2px;
+	max-width: 800px;
+	margin-bottom: 10px;
+}
+
+.helpP {
+	max-width: 800px;
+	margin: auto;
+	width: 96%;
+	padding: 10px;
+	text-align: justify;
+	text-indent: 3ch;
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type=number] {
+  -moz-appearance: textfield;
+}
