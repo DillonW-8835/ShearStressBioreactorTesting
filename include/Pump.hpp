@@ -12,7 +12,7 @@ const int MODBUS_RX2 = 16;
 const int MODBUS_TX2 = 17;
 const int MODBUS_DE = 18;
 const int MODBUS_RE = 18;
-const int MODBUS_ENABLE = 19; // automatically set to high when writing, low otherwise to receive
+const int MODBUS_ENABLE = 18; // automatically set to high when writing, low otherwise to receive
 const int PUMP_ADDRESS = 0xEF; // Modbus address of pump controller
 
 // Pump speeds in ml/min above which the precision of the pump decreases by a factor of 2
@@ -56,10 +56,8 @@ void postTransmission()
 
 void pumpSetup() {
     // Setup RS485 communication
-    pinMode(MODBUS_RE, OUTPUT);
-    pinMode(MODBUS_DE, OUTPUT);
-    digitalWrite(MODBUS_RE, 0);
-    digitalWrite(MODBUS_DE, 0);
+    pinMode(MODBUS_ENABLE, OUTPUT);
+    digitalWrite(MODBUS_ENABLE, 0);
 
     // Initialize ModbusMaster with proper pins for TX, RX, and DE/RE
     Serial2.begin(9600, SERIAL_8N1, MODBUS_RX2, MODBUS_TX2);
