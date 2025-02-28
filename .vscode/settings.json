@@ -1,0 +1,24 @@
+{
+    "files.associations": {
+        "*.S": "platformio-debug.asm",
+        "functional": "cpp",
+        "type_traits": "cpp",
+        "*.tcc": "cpp",
+        "unordered_map": "cpp",
+        "fstream": "cpp",
+        "istream": "cpp",
+        "ostream": "cpp",
+        "sstream": "cpp",
+        "cstdio": "cpp",
+        "new": "cpp",
+        "array": "cpp",
+        "deque": "cpp",
+        "string": "cpp",
+        "unordered_set": "cpp",
+        "vector": "cpp",
+        "string_view": "cpp",
+        "initializer_list": "cpp",
+        "regex": "cpp"
+    },
+    "cmake.configureOnOpen": false
+}

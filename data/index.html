@@ -1,0 +1,76 @@
+
+<script>
+    var gateway = `ws://${window.location.hostname}/ws`;
+    var websocket;
+</script>
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ESP32 WebServer</title>
+        <link rel="stylesheet" type="text/xss" href="style.css">
+        <script src="websocket.js"></script>
+    </head>
+    <body>
+        <h1>Bioreactor Website</h1>
+        
+        <!-- Project Running Time -->
+        <section>
+            <h2>Status & Data</h2>
+            <div id="status">Status: Running</div>
+            <div id="runningTime">Total Time: 0 Hr</div>
+            <div id="flowData">Waiting for flow data...</div></h1>
+            <div id="status">Curent Shear Stress: 0 Pa</div>
+        </section>
+    
+        <!-- Schedule Setter -->
+        <section>
+            <h2>Running Paramaters</h2>
+            <div>
+                <label for="shearStress">Shear Stress: </label>
+                <input type="number" id="shearStressValue" placeholder="Shear Stress Value">
+            </div>
+            <div>
+                <label for="runTime">Run Time: </label>
+                <input type="text" id="runTime" placeholder="Enter Run time (Hr)">
+            </div>
+            <div>
+                <label for="breakTime">Break Time: </label>
+                <input type="text" id="breakTime" placeholder="Enter Break time (Hr)">
+            </div>
+            <div>
+                <label for="runTime">Number of cycles: </label>
+                <input type="number" id="repeation" placeholder="Enter Repeation Amount">
+            </div>
+            <div>
+                <button id="submitButton">Submit</button>
+            </div>
+        </section>
+
+        <!-- Settings -->
+        <section>
+            <h2>Bioreactor Paramaters/Settings</h2>
+            <div>
+                <label for="channelHeight">Channel Height: </label>
+                <input type="number" id="channelHeightValue" placeholder="Channel Height (m)">
+            </div>
+            <div>
+                <label for="channelWidth">Channel Width: </label>
+                <input type="number" id="channelWidthValue" placeholder="Channel Width (m)">
+            </div>
+            <div>
+                <label for="MU">MU: </label>
+                <input type="number" id="MUValue" placeholder="MU (Pa * s)">
+            </div>
+            <div>
+                <label for="RHO">RHO: </label>
+                <input type="number" id="RHOValue" placeholder="RHO (kg / m^3)">
+            </div>
+            <div>
+                <button id="valueSetButton">Set Bioreactor Values</button>
+            </div>
+        </section>
+    </body>
+</html>
