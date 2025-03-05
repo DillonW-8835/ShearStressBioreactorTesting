@@ -44,14 +44,12 @@ bool pumpOn;
 
 void preTransmission()
 {
-  digitalWrite(MODBUS_RE, 1);
-  digitalWrite(MODBUS_DE, 1);
+  digitalWrite(MODBUS_ENABLE, 1);
 }
 
 void postTransmission()
 {
-  digitalWrite(MODBUS_RE, 0);
-  digitalWrite(MODBUS_DE, 0);
+  digitalWrite(MODBUS_ENABLE, 0);
 }
 
 void pumpSetup() {

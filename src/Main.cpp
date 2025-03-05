@@ -27,7 +27,7 @@ void setup() {
   pumpSetup(); //Function in Pump.hpp
   
   //Set up web server
-  initWebSetup();
+  // initWebSetup();
 
   //Begin wire communication
   Wire.begin();
@@ -44,10 +44,14 @@ void setup() {
 }
 
 void loop() {
-  ws.cleanupClients();
-  String flowData = readFlowSensor(flowSensor); //Function in FlowSensor.hpp
-  ws.textAll(flowData); //Send data to be handled by webscoket
-  String pumpStatus = checkStatus();
-  ws.textAll(pumpStatus); //Send data to be handled by webscoket
-  delay(1000);
+
+  flowRate = SLF3X.getFlow();
+  Serial.println(flowRate);
+
+  // ws.cleanupClients();
+  // float flowData = readFlowSensor(flowSensor); //Function in FlowSensor.hpp
+  // // ws.textAll(flowData); //Send data to be handled by webscoket
+  // float pumpStatus = checkStatus();
+  // ws.textAll(pumpStatus); //Send data to be handled by webscoket
+  delay(100);
 }
