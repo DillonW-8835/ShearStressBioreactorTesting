@@ -3,6 +3,8 @@ Gibson Moseley - Pump.hpp
 All functions to setup and control the pump
 *************************************************************************/
 
+#ifndef PUMP_HPP
+#define PUMP_HPP
 #include <ModbusMaster.h>
 
 ModbusMaster node;
@@ -10,8 +12,6 @@ ModbusMaster node;
 // Set up Pump controller
 const int MODBUS_RX2 = 16;
 const int MODBUS_TX2 = 17;
-const int MODBUS_DE = 18;
-const int MODBUS_RE = 18;
 const int MODBUS_ENABLE = 18; // automatically set to high when writing, low otherwise to receive
 const int PUMP_ADDRESS = 0xEF; // Modbus address of pump controller
 
@@ -65,7 +65,7 @@ void pumpSetup() {
 }
 
 String checkStatus() {
-    String pumpStatus = "";
+    String pumpStatus = "Pump Status: ";
     if (node.readCoils(0x1001, 1) == 0) {
         uint16_t state = node.getResponseBuffer(0);
         if(state == 1) {
@@ -166,7 +166,30 @@ bool setSpeed(int flow, bool force) {
     return setSpeed(high, low, force);
 }
 
+// void getSpeed() {
+    // Read the set speed
+    // uint16_t result = node.readHoldingRegisters(0x3001, 2); // Read 2 registers starting at 0x3001
+    // if (result == 0) {
+    //     uint16_t setSpeedLow = node.getResponseBuffer(0);
+    //     uint16_t setSpeedHigh = node.getResponseBuffer(1);
+    //     Serial.printf("Set speed: %X %X\n", setSpeedHigh, setSpeedLow);
+    // } else {
+    //     Serial.printf("Error (%d) reading set speed!\n", result);
+    // }
+
+    // // Read the real-time speed
+    // result = node.readHoldingRegisters(0x3005, 2); // Read 2 registers starting at 0x3005
+    // if (result == 0) {
+    //     uint16_t realTimeSpeedLow = node.getResponseBuffer(0);
+    //     uint16_t realTimeSpeedHigh = node.getResponseBuffer(1);
+    //     Serial.printf("Real-time speed: %X %X\n", realTimeSpeedHigh, realTimeSpeedLow);
+    // } else {
+    //     Serial.printf("Error (%d) reading real-time speed!\n", result);
+    // }
+// }
+
 int32_t getSpeed() {
+    String pumpSpeed = "Pump Speed: ";
     uint16_t result = node.readWriteMultipleRegisters(0x3001, 6); // read all holding registers
     int32_t lowBytes = -1;
     // Check if the command returned no error
@@ -186,3 +209,5 @@ int32_t getSpeed() {
 bool isPumpOn() {
     return pumpOn;
 }
+
+#endif
