@@ -9,16 +9,20 @@ All functions to setup and control the pump
 #include <ModbusMaster.h>
 
 ModbusMaster node;
+//bool pumpOn;
 
 // Set up Pump controller
 const int MODBUS_RX2 = 16;
 const int MODBUS_TX2 = 17;
-const int MODBUS_DE = 18;
-const int MODBUS_RE = 18;
-const int MODBUS_ENABLE = 19; // automatically set to high when writing, low otherwise to receive
+// const int MODBUS_DE = 18;
+// const int MODBUS_RE = 18;
+const int MODBUS_ENABLE = 18; // automatically set to high when writing, low otherwise to receive
 const int PUMP_ADDRESS = 0xEF; // Modbus address of pump controller
 
 // Pump speeds in ml/min above which the precision of the pump decreases by a factor of 2
+#define MIN_FLOW_RATE 8
+#define MAX_FLOW_RATE 400
+
 const int STEP_0 = 8;
 const int STEP_1 = 16;
 const int STEP_2 = 32;
@@ -47,22 +51,26 @@ bool pumpOn;
 
 void preTransmission()
 {
-  digitalWrite(MODBUS_RE, 1);
-  digitalWrite(MODBUS_DE, 1);
+  digitalWrite(MODBUS_ENABLE, 1);
+  Serial.print(millis());
+    Serial.println(": MODBUS_ENABLE set to HIGH (Transmission Mode)");
+  //digitalWrite(MODBUS_DE, 1);
 }
 
 void postTransmission()
 {
-  digitalWrite(MODBUS_RE, 0);
-  digitalWrite(MODBUS_DE, 0);
+  digitalWrite(MODBUS_ENABLE, 0);
+  Serial.print(millis());
+    Serial.println(": MODBUS_ENABLE set to LOW (Reception Mode)");
+//   digitalWrite(MODBUS_DE, 0);
 }
 
 void pumpSetup() {
     // Setup RS485 communication
-    pinMode(MODBUS_RE, OUTPUT);
-    pinMode(MODBUS_DE, OUTPUT);
-    digitalWrite(MODBUS_RE, 0);
-    digitalWrite(MODBUS_DE, 0);
+    pinMode(MODBUS_ENABLE, OUTPUT);
+    // pinMode(MODBUS_DE, OUTPUT);
+    digitalWrite(MODBUS_ENABLE, 0);
+    // digitalWrite(MODBUS_DE, 0);
 
     // Initialize ModbusMaster with proper pins for TX, RX, and DE/RE
     Serial2.begin(9600, SERIAL_8N1, MODBUS_RX2, MODBUS_TX2);
@@ -71,126 +79,190 @@ void pumpSetup() {
     node.postTransmission(postTransmission);
 }
 
-String checkPumpStatus(bool printSerial) {
-    delay(100);
-    String pumpStatus = "pumpStatus; ";
-    if (node.readCoils(0x1001, 1) == 0) {
-        uint16_t state = node.getResponseBuffer(0);
-        if(state == 1) {
-            pumpStatus += "Pump status: On";
-            if(printSerial == 1) {
-                Serial.printf("Pump status: On\n");
+/**
+ * @brief Checks the status of the pump and optionally prints the status to the serial monitor.
+ * 
+ * This function reads the pump's status using a Modbus node and determines whether the pump
+ * is on, off, or in an unknown state. The status is returned as a string and can also be 
+ * broadcasted to all connected WebSocket clients. If the `printSerial` parameter is true, 
+ * the status is printed to the serial monitor.
+ * 
+ * @param printSerial A boolean flag indicating whether to print the pump status to the serial monitor.
+ *                    - `true`: Print the status to the serial monitor.
+ *                    - `false`: Do not print the status.
+ * 
+ * @return A string representing the pump's status:
+ *         - "Pump status: On" if the pump is on.
+ *         - "Pump status: Off" if the pump is off.
+ *         - "Pump status: Unknown" if the pump's state could not be determined.
+ * 
+ * @note The function uses a Modbus node to read the pump's state and assumes that the 
+ *       response buffer contains the state information. It also sends the status to all 
+ *       connected WebSocket clients.
+ * 
+ * @warning If the Modbus node fails to read the pump's state, an error message is printed 
+ *          to the serial monitor, and the status is set to "Unknown".
+ */
+
+ bool checkPumpStatus(bool printSerial) {
+    int retries = 3;
+
+    while (retries > 0) {
+        int result = node.readCoils(0x1001, 1); // Read the pump state
+        if (result == 0) {
+            pumpOn = node.getResponseBuffer(0);
+            if (printSerial) {
+                Serial.printf("Pump status: %s\n", pumpOn ? "On" : "Off");
             }
-        } else if (state == 0) {
-            pumpStatus += "Pump status: Off";
-            if(printSerial == 1) {
-                Serial.printf("Pump status: Off\n");
-            }
+            return pumpOn;
         }
-        pumpOn = state;
+        retries--;
+        delay(100); // Wait before retrying
     }
-    else {
-        pumpStatus += "Pump status: Unknown";
-        Serial.println("Error: Unable to read pump state!");
-    }
-    ws.textAll(pumpStatus);
-    return pumpStatus;
-    //return pumpOn;
+
+    Serial.println("Error: Unable to read pump state!");
+    return false; // Default to off if the operation fails
 }
+
+// String checkPumpStatus(bool printSerial) {
+//     delay(100);
+//     String pumpStatus = "pumpStatus; ";
+//     if (node.readCoils(0x1001, 1) == 0) {
+//         uint16_t state = node.getResponseBuffer(0);
+//         if(state == 1) {
+//             pumpStatus += "Pump status: On";
+//             if(printSerial == 1) {
+//                 Serial.printf("Pump status: On\n");
+//             }
+//         } else if (state == 0) {
+//             pumpStatus += "Pump status: Off";
+//             if(printSerial == 1) {
+//                 Serial.printf("Pump status: Off\n");
+//             }
+//         }
+//         pumpOn = state;
+//     }
+//     else {
+//         pumpStatus += "Pump status: Unknown";
+//         Serial.println("Error: Unable to read pump state!");
+//     }
+//     ws.textAll(pumpStatus);
+//     return pumpStatus;
+//     //return pumpOn;
+// }
 
 bool setPump(bool option) {
-    if (pumpOn != option) {
-        pumpOn = option;
-
-        uint16_t result = node.writeSingleCoil(0x1001, pumpOn ? 0xFF : 0x00);
-        if (result != 0) {
-            Serial.printf("Unable to switch pump state! Error code: %d\n", result);
-            pumpOn = !option;
-        }
+    if (pumpOn == option) {
+        return pumpOn; // No need to change state
     }
-    return pumpOn;
+
+    int retries = 3;
+    int result = -1;
+
+    while (retries > 0) {
+        result = node.writeSingleCoil(0x1001, option ? 0xFF : 0x00);
+        if (result == 0) {
+            pumpOn = option; // Update state only on success
+            return pumpOn;
+        }
+        retries--;
+        delay(100); // Wait before retrying
+    }
+
+    Serial.printf("Unable to switch pump state! Error code: %d\n", result);
+    return pumpOn; // Return the previous state if the operation fails
 }
 
-bool setPumpSpeed(uint16_t high, uint16_t low, bool start/* = false*/) {
-    node.setTransmitBuffer(0, low);
-    node.setTransmitBuffer(1, high);
-    int result = node.writeMultipleRegisters(0x3001, 0x02);
+bool setPumpSpeed(uint16_t high, uint16_t low) {
+    int retries = 3;
+    int result = -1; // Initialize result to an invalid value
 
-    if (start) {
-        setPump(true);
+    while (retries > 0) {
+        node.setTransmitBuffer(0, low);
+        node.setTransmitBuffer(1, high);
+        result = node.writeMultipleRegisters(0x3001, 2); // Write 2 registers
+                                                     // May be 0x02 instead of 2
+        if (result == 0) {
+            Serial.printf("Pump speed set successfully! High: 0x%04X, Low: 0x%04X\n", high, low);
+            return true; // Success
+        }
+
+        Serial.printf("Retrying to set pump speed... Error code: %d\n", result);
+        retries--;
+        delay(100); // Wait before retrying
     }
 
-    if (result != 0) {
-        Serial.printf("Error (%d) setting flow rate!\n", result);
-        return false;
-    }
-    else {
-        return true;
-    }
+    Serial.printf("Error (%d) setting flow rate!\n", result);
+    return false; // Failure
 }
 
-bool setPumpSpeed(int flow, bool force) {
-    // The pump will ignore speed commands when running
-    if (pumpOn) {
-        if (force) {
-            setPump(false);
-        }
-        else {
-            Serial.println("Error: Attempt to set pump speed while running.");
-            return false;
-        }
-    }
-
-    // Constrain values to within the pump range (although the pump controller does this as well for 0.1-420ish ml/min)
-    if (flow < 8) {
-        flow = 8;
-    }
-    else if (flow > 400) {
-        flow = 400;
-    }
-
+uint16_t calculateFlowRateRegister(int flow) {
     uint16_t low = 0;
     uint16_t high = 0;
 
-    // TODO: currently only integer flow rates are possible, but the high bytes can be used to 
-    // achieve decimal values, following the calculations done for flow rates over 256 ml/min
-
-    // Start with the known register value at the edge of the precision level, then add the needed steps
     if (flow <= STEP_1) {
         low = STEP_0_CMD + ((flow - STEP_0) * RATE_0);
-    }
-    else if (flow > STEP_1 && flow <= STEP_2) {
+    } else if (flow <= STEP_2) {
         low = STEP_1_CMD + ((flow - STEP_1) * RATE_1);
-    }
-    else if (flow > STEP_2 && flow <= STEP_3) {
+    } else if (flow <= STEP_3) {
         low = STEP_2_CMD + ((flow - STEP_2) * RATE_2);
-    }
-    else if (flow > STEP_3 && flow <= STEP_4) {
+    } else if (flow <= STEP_4) {
         low = STEP_3_CMD + ((flow - STEP_3) * RATE_3);
-    }
-    else if (flow > STEP_4 && flow <= STEP_5) {
+    } else if (flow <= STEP_5) {
         low = STEP_4_CMD + ((flow - STEP_4) * RATE_4);
-    }
-    else if (flow > STEP_5) {
-        low = STEP_5_CMD + (int) ((flow - STEP_5) * RATE_5);
-        high = (flow % 2) * (0x8000); // add half of a step to achieve odd numbers
+    } else {
+        low = STEP_5_CMD + (int)((flow - STEP_5) * RATE_5);
+        high = (flow % 2) * 0x8000; // Add half of a step for odd numbers
     }
 
-    return setPumpSpeed(high, low, force);
+    return (high << 16) | low; // Combine high and low into a single value
 }
 
-int32_t getPumpSpeed() {
-    uint16_t result = node.readWriteMultipleRegisters(0x3001, 6); // read all holding registers
-    int32_t lowBytes = -1;
-    // Check if the command returned no error
-    if (result == 0) {
-        // Print the speeds stored in the holding registers
-        lowBytes = node.getResponseBuffer(0);
-        Serial.printf("Set speed: %X %X\n", node.getResponseBuffer(1), lowBytes);
-        Serial.printf("Real-time speed: %X %X\n", node.getResponseBuffer(5), node.getResponseBuffer(4));
+// Function to set pump speed based on desired flow rate
+bool setPumpSpeedFromFlowRate(int flowRate) {
+    // Constrain the flow rate to the valid range
+    flowRate = constrain(flowRate, MIN_FLOW_RATE, MAX_FLOW_RATE);
+
+    // Calculate the register values
+    uint16_t flowRateRegister = calculateFlowRateRegister(flowRate);
+    uint16_t high = flowRateRegister >> 16; // Extract high 16 bits
+    uint16_t low = flowRateRegister & 0xFFFF; // Extract low 16 bits
+
+    // Write the register values to the pump
+    return setPumpSpeed(high, low);
+}
+
+bool setPumpSpeed(int flow) {
+    flow = constrain(flow, 8, 400); // Constrain flow to valid range
+    uint16_t flowRateRegister = calculateFlowRateRegister(flow);
+    return setPumpSpeed(flowRateRegister >> 16, flowRateRegister & 0xFFFF);
+}
+
+struct PumpSpeed {
+    int32_t setSpeed;
+    int32_t realTimeSpeed;
+};
+
+PumpSpeed getPumpSpeed() {
+    PumpSpeed speed = {-1, -1}; // Default values for failure
+    int retries = 3;
+    int result = -1; // Initialize result to an invalid value
+
+    while (retries > 0) {
+        result = node.readHoldingRegisters(0x3001, 6); // Read 6 registers
+        if (result == 0) {
+            speed.setSpeed = (node.getResponseBuffer(1) << 16) | node.getResponseBuffer(0);
+            speed.realTimeSpeed = (node.getResponseBuffer(5) << 16) | node.getResponseBuffer(4);
+            Serial.printf("Set speed: %d\n", speed.setSpeed);
+            Serial.printf("Real-time speed: %d\n", speed.realTimeSpeed);
+            return speed;
+        }
+        retries--;
+        delay(100); // Wait before retrying
     }
-    
-    return lowBytes;
+
+    Serial.println("Error: Unable to read pump speed!");
+    return speed;
 }
 
 /*

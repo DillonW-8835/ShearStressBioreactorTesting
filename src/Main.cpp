@@ -24,25 +24,33 @@ Where we call all functions and run all code
 void setup() {
   //Start Serial Communication
   Serial.begin(115200);
-
+  Wire.begin();
   //Setup modbus for pump communication
-  //pumpSetup(); //Function in Pump.hpp
-  
-  //Set up web server
+
+  pumpSetup(); //Function in Pump.hpp
+  flowSensorSetup(flowSensor); //Function in FlowSensor.hpp
+    // setupMicroSDcard();
+
   initWebSetup();
-  setupMicroSDcard();
+
+  //setPump(0); //Turn pump off
+  //Set up web server
 
   //Begin wire communication
-  Wire.begin();
   
   //Set up Flow Sensor, Stepper Motor, & MicroSD
-  flowSensorSetup(flowSensor); //Function in FlowSensor.hpp
+
+  // setupMicroSDcard();
   // stepperSetup(stepper); //Function in StepperMotor.hpp
 
-  //setRoutine("Test", 0.01, 0.001, 0.3, 1);
+  setRoutine("Test", 0.01, 0.001, 0.3, 5);
 }
 
 void loop() {
-  delay(200);
+  //delay(50);
+  //ws.cleanupClients(); //Clean up clients to make sure they are not using too much memory
+ // String flowData = readFlowSensor(flowSensor, 1); //Function in FlowSensor.hpp
+ // ws.textAll(flowData); //Send flow data to website
   //ws.cleanupClients();
+ delay(200);
 }
